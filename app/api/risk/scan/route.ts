@@ -23,6 +23,17 @@ export async function POST(request: NextRequest) {
   }
 
   const now = Date.now();
+  await prisma.agentLog.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.tokenLaunch.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.payment.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.blockchainEvent.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.activity.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.agentMemory.deleteMany({
+    where: { agentId: body.agentId, key: { startsWith: "risk_" } },
+  });
+  await prisma.transaction.deleteMany({
+    where: { OR: [{ fromAgentId: body.agentId }, { toAgentId: body.agentId }] },
+  });
   const blacklist = ["0.0.666", "0.0.31337"];
   const watchlist = [
     { address: "0.0.54321", reason: "Proxy upgradeable" },

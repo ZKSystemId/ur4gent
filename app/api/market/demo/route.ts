@@ -17,14 +17,14 @@ export async function POST(request: NextRequest) {
 
   const now = Date.now();
 
-  await prisma.agentLog.deleteMany({
-    where: {
-      agentId: body.agentId,
-      title: { in: ["Market Analyst", "Whale Alert", "Market Sentiment", "Market Insight"] },
-    },
-  });
+  await prisma.agentLog.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.tokenLaunch.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.payment.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.blockchainEvent.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.activity.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.agentMemory.deleteMany({ where: { agentId: body.agentId } });
   await prisma.transaction.deleteMany({
-    where: { fromAgentId: body.agentId, txId: { startsWith: "whale-" } },
+    where: { OR: [{ fromAgentId: body.agentId }, { toAgentId: body.agentId }] },
   });
 
   await prisma.transaction.create({

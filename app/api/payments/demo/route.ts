@@ -16,14 +16,18 @@ export async function POST(request: NextRequest) {
 
   const now = Date.now();
 
-  await prisma.agentLog.deleteMany({
-    where: { agentId: body.agentId, paymentId: { not: null } },
-  });
+  await prisma.agentLog.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.tokenLaunch.deleteMany({ where: { agentId: body.agentId } });
   await prisma.payment.deleteMany({
     where: { agentId: body.agentId },
   });
   await prisma.activity.deleteMany({
-    where: { agentId: body.agentId, type: { in: ["payment_created", "payment_executed", "on_chain_payment"] } },
+    where: { agentId: body.agentId },
+  });
+  await prisma.blockchainEvent.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.agentMemory.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.transaction.deleteMany({
+    where: { OR: [{ fromAgentId: body.agentId }, { toAgentId: body.agentId }] },
   });
 
   const [p1, p2, p3] = await Promise.all([
@@ -141,4 +145,3 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ success: true, payments });
 }
-

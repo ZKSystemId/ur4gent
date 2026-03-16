@@ -14,11 +14,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Agent not found" }, { status: 404 });
   }
 
-  await prisma.agentLog.deleteMany({
-    where: { agentId: body.agentId, tokenLaunchId: { not: null } },
-  });
+  await prisma.agentLog.deleteMany({ where: { agentId: body.agentId } });
   await prisma.tokenLaunch.deleteMany({
     where: { agentId: body.agentId },
+  });
+  await prisma.payment.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.blockchainEvent.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.activity.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.agentMemory.deleteMany({ where: { agentId: body.agentId } });
+  await prisma.transaction.deleteMany({
+    where: { OR: [{ fromAgentId: body.agentId }, { toAgentId: body.agentId }] },
   });
 
   const now = Date.now();
@@ -66,4 +71,3 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ success: true, launches });
 }
-
