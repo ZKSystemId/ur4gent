@@ -56,10 +56,14 @@ export default function Topbar() {
   };
 
   useEffect(() => {
+    if (!isConnected) return;
     fetchTreasury();
-    const interval = setInterval(fetchTreasury, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [isConnected]);
+
+  useEffect(() => {
+    if (!showWithdrawModal) return;
+    fetchTreasury();
+  }, [showWithdrawModal]);
 
   const handleWithdraw = async () => {
     if (!accountId) return;

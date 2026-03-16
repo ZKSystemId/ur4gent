@@ -24,12 +24,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Only initialize on server if needed, or keep it.
-  // The original code had a side-effect import here which is unconventional for Server Components but might work.
-  // We'll keep it as is.
-  void import("@/services/operationsOrchestrator").then(
-    ({ initializeOperationsSystem }) => initializeOperationsSystem(),
-  );
+  if (process.env.NODE_ENV !== "production") {
+    void import("@/services/operationsOrchestrator").then(
+      ({ initializeOperationsSystem }) => initializeOperationsSystem(),
+    );
+  }
   
   return (
     <html lang="en">
