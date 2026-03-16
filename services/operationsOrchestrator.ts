@@ -132,7 +132,7 @@ export const runFullOpsCycle = async (coordinatorId?: string) => {
       where: { agentId: paymentAgent.id, title: "AI Operation Cycle" },
     });
     const payment = await runPaymentEngine(paymentAgent.id);
-    const executed = Array.isArray(payment?.executed) ? payment.executed.length : payment?.count ?? 0;
+    const executed = payment?.count ?? 0;
     const failed = payment?.failed ?? 0;
     trace.payment = { executed, failed };
     await prisma.agentLog.create({

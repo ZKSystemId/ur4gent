@@ -168,7 +168,7 @@ export default function BountiesPage() {
       };
 
       const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-      const runLines = async (lines: string[], delayMs: number) => {
+      const runLines = async (lines: readonly string[], delayMs: number) => {
         for (const line of lines) {
           await sleep(delayMs);
           pushLog(line);
@@ -533,6 +533,9 @@ export default function BountiesPage() {
               !isExpired &&
               (autoAssign ? (best?.match ?? 0) === 100 : missing.length === 0);
             const rankedAgents = rankAgentsForRequirements(required).slice(0, 2);
+            const proof = completedProofs[bounty.id];
+            const transferTx = proof?.transferTx ?? null;
+            const paymentTxId = proof?.paymentTxId ?? null;
             return (
             <div 
                 key={bounty.id} 
@@ -641,49 +644,49 @@ export default function BountiesPage() {
               )}
 
               {/* Proof Link */}
-              {completedProofs[bounty.id] && (
+              {proof && (
                   <div className="mb-4 rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/30">
                       <div className="text-xs text-emerald-400 font-bold mb-1">✓ Verified Proof of Work</div>
                       <a 
-                        href={`${hashscanBase}/topic/${completedProofs[bounty.id].topicId}`} 
+                        href={`${hashscanBase}/topic/${proof.topicId}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-[10px] text-emerald-300 hover:underline break-all"
                       >
-                          Topic {completedProofs[bounty.id].topicId} Sequence #{completedProofs[bounty.id].seq}
+                          Topic {proof.topicId} Sequence #{proof.seq}
                       </a>
-                      {completedProofs[bounty.id].settlementSeq && (
+                      {proof.settlementSeq && (
                         <div className="mt-2 text-[10px] text-emerald-300">
-                          Settlement: #{completedProofs[bounty.id].settlementSeq} •{" "}
+                          Settlement: #{proof.settlementSeq} •{" "}
                           <a
-                            href={`${hashscanBase}/token/${completedProofs[bounty.id].tokenId}`}
+                            href={`${hashscanBase}/token/${proof.tokenId}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="hover:underline"
                           >
-                            Token {completedProofs[bounty.id].tokenId}
+                            Token {proof.tokenId}
                           </a>{" "}
-                          • {completedProofs[bounty.id].creditAmount} CLAW
+                          • {proof.creditAmount} CLAW
                         </div>
                       )}
-                      {completedProofs[bounty.id].transferTx && (
+                      {transferTx && (
                         <a
-                          href={`${hashscanBase}/transaction/${encodeURIComponent(completedProofs[bounty.id].transferTx)}`}
+                          href={`${hashscanBase}/transaction/${encodeURIComponent(transferTx)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="mt-1 block text-[10px] text-emerald-300 hover:underline break-all"
                         >
-                          HTS Transfer Tx: {completedProofs[bounty.id].transferTx}
+                          HTS Transfer Tx: {transferTx}
                         </a>
                       )}
-                      {completedProofs[bounty.id].paymentTxId && (
+                      {paymentTxId && (
                         <a
-                          href={`${hashscanBase}/transaction/${encodeURIComponent(completedProofs[bounty.id].paymentTxId)}`}
+                          href={`${hashscanBase}/transaction/${encodeURIComponent(paymentTxId)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="mt-1 block text-[10px] text-emerald-300 hover:underline break-all"
                         >
-                          Payment Tx: {completedProofs[bounty.id].paymentTxId} ({completedProofs[bounty.id].paymentStatus ?? "UNKNOWN"})
+                          Payment Tx: {paymentTxId} ({proof.paymentStatus ?? "UNKNOWN"})
                         </a>
                       )}
                   </div>
