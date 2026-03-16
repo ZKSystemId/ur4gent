@@ -10,7 +10,7 @@ export default function MarketMonitorPanel({
 }: {
   agentId: string;
   initialData: MarketInsights;
-  operationalStatus: "active" | "paused" | "stopped";
+  operationalStatus: "active" | "paused" | "stopped" | "inactive";
 }) {
   const [data, setData] = useState<MarketInsights>(initialData);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -19,10 +19,7 @@ export default function MarketMonitorPanel({
   const [mounted, setMounted] = useState(false);
   const didAutoDemo = useRef(false);
 
-  const fetchMarket = useCallback(async () => {
-    if (operationalStatus !== "active") {
-      return;
-    }
+  const runAnalysis = useCallback(async () => {
     setIsSyncing(true);
     try {
       const res = await fetch(`/api/market/scan?agentId=${agentId}`, { cache: "no-store" });
@@ -34,20 +31,20 @@ export default function MarketMonitorPanel({
     } finally {
       setIsSyncing(false);
     }
-  }, [agentId, operationalStatus]);
+  }, [agentId]);
 
   useEffect(() => {
     setMounted(true);
     if (operationalStatus !== "active") {
       return;
     }
-    const t0 = setTimeout(fetchMarket, 0);
-    const t = setInterval(fetchMarket, 10000);
+    const t0 = setTimeout(runAnalysis, 0);
+    const t = setInterval(runAnalysis, 10000);
     return () => {
       clearTimeout(t0);
       clearInterval(t);
     };
-  }, [fetchMarket, operationalStatus]);
+  }, [operationalStatus, runAnalysis]);
 
   useEffect(() => {
     if (didAutoDemo.current) return;
@@ -55,7 +52,6 @@ export default function MarketMonitorPanel({
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("demo") !== "1") return;
     didAutoDemo.current = true;
-    if (operationalStatus !== "active") return;
     void (async () => {
       setIsGenerating(true);
       await fetch("/api/market/demo", {
@@ -68,10 +64,25 @@ export default function MarketMonitorPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agentId }),
       });
-      await fetchMarket();
+      await runAnalysis();
       setIsGenerating(false);
     })();
-  }, [agentId, fetchMarket, operationalStatus]);
+  }, [agentId, runAnalysis]);
+
+  const statusLabel =
+    operationalStatus === "active"
+      ? "Active"
+      : operationalStatus === "paused"
+        ? "Paused"
+        : operationalStatus === "inactive"
+          ? "Inactive"
+          : "Stopped";
+  const statusTone =
+    operationalStatus === "active"
+      ? "text-emerald-300 border-emerald-500/30 bg-emerald-500/10"
+      : operationalStatus === "paused"
+        ? "text-amber-300 border-amber-500/30 bg-amber-500/10"
+        : "text-slate-300 border-white/10 bg-white/5";
 
   const trends = useMemo(() => data.trends.slice(0, 4), [data.trends]);
   const reports = useMemo(() => data.tokenReports.slice(0, 4), [data.tokenReports]);
@@ -82,8 +93,18 @@ export default function MarketMonitorPanel({
         <div>
           <h3 className="text-lg font-semibold text-white">Market Analyst AI</h3>
           <p className="text-sm text-slate-400">
-            Fungsi utama: memberi analisis pasar crypto (insight engine, bukan auto trade)
+            Analisis harga (CoinGecko), trend, whale movement, dan ringkasan AI.
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className={`rounded-full border px-3 py-1 text-[10px] ${statusTone}`}>
+              Status: {statusLabel}
+            </span>
+            {operationalStatus !== "active" && (
+              <span className="text-[10px] text-slate-500">
+                Start/Resume agent untuk auto-scan (tombol Run Analysis tetap bisa dipakai).
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400">Last scan: {mounted ? lastScan : "—"}</span>
@@ -100,7 +121,7 @@ export default function MarketMonitorPanel({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ agentId }),
               });
-              await fetchMarket();
+              await runAnalysis();
               setIsGenerating(false);
             }}
             disabled={isGenerating || isSyncing}
@@ -109,11 +130,11 @@ export default function MarketMonitorPanel({
             {isGenerating ? "Generating..." : "Generate Demo"}
           </button>
           <button
-            onClick={fetchMarket}
+            onClick={runAnalysis}
             disabled={isSyncing}
             className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 hover:bg-white/10 disabled:opacity-50"
           >
-            {isSyncing ? "Scanning..." : "Scan Now"}
+            {isSyncing ? "Running..." : "Run Analysis"}
           </button>
         </div>
       </div>

@@ -41,7 +41,7 @@ export default function RiskMonitorPanel({
 }: {
   agentId: string;
   initialData: RiskScanResponse;
-  operationalStatus: "active" | "paused" | "stopped";
+  operationalStatus: "active" | "paused" | "stopped" | "inactive";
 }) {
   const [data, setData] = useState<RiskScanResponse>(initialData);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -57,9 +57,6 @@ export default function RiskMonitorPanel({
   const didAutoDemo = useRef(false);
 
   const fetchRisk = useCallback(async () => {
-    if (operationalStatus !== "active") {
-      return;
-    }
     setIsSyncing(true);
     try {
       const res = await fetch(`/api/risk/scan?agentId=${agentId}`, { cache: "no-store" });
@@ -71,7 +68,7 @@ export default function RiskMonitorPanel({
     } finally {
       setIsSyncing(false);
     }
-  }, [agentId, operationalStatus]);
+  }, [agentId]);
 
   const fetchLists = useCallback(async () => {
     const res = await fetch(`/api/risk/lists?agentId=${agentId}`, { cache: "no-store" });
@@ -93,7 +90,7 @@ export default function RiskMonitorPanel({
       clearTimeout(t0);
       clearInterval(t);
     };
-  }, [agentId, fetchRisk, operationalStatus]);
+  }, [fetchRisk, operationalStatus]);
 
   useEffect(() => {
     if (didAutoDemo.current) return;
@@ -101,7 +98,6 @@ export default function RiskMonitorPanel({
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("demo") !== "1") return;
     didAutoDemo.current = true;
-    if (operationalStatus !== "active") return;
     void (async () => {
       setIsGenerating(true);
       await fetch("/api/risk/scan", {
@@ -113,7 +109,7 @@ export default function RiskMonitorPanel({
       await fetchRisk();
       setIsGenerating(false);
     })();
-  }, [agentId, fetchLists, fetchRisk, operationalStatus]);
+  }, [agentId, fetchLists, fetchRisk]);
 
   useEffect(() => {
     const t0 = setTimeout(fetchLists, 0);

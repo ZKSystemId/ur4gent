@@ -5,6 +5,7 @@ import type { Agent } from "@/types/agent";
 import PaymentTaskPanel from "./PaymentTaskPanel";
 import TokenCreatorPanel from "./TokenCreatorPanel";
 import TopUpModal from "./TopUpModal";
+import { useRouter } from "next/navigation";
 
 type Log = {
   id: string;
@@ -22,6 +23,7 @@ export default function AgentControlPanel({ agent, initialLogs }: { agent: Agent
   const [showTopUp, setShowTopUp] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     // Set initial client-side time to prevent hydration mismatch
@@ -30,12 +32,18 @@ export default function AgentControlPanel({ agent, initialLogs }: { agent: Agent
 
   const toggleStatus = async (newStatus: "active" | "paused" | "stopped") => {
     try {
-      await fetch(`/api/agents/${agent.id}/status`, {
+      const res = await fetch(`/api/agents/${agent.id}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      setStatus(newStatus);
+      if (!res.ok) {
+        const json = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(json?.error || "Failed to update status");
+      }
+      const json = (await res.json().catch(() => null)) as { status?: "active" | "paused" | "stopped" } | null;
+      setStatus(json?.status ?? newStatus);
+      router.refresh();
     } catch (e) {
       console.error("Failed to update status", e);
     }

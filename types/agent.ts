@@ -8,7 +8,7 @@ export type AgentRole =
 
 export type AgentStatus = "Idle" | "Running" | "Hiring";
 
-export type OperationalStatus = "active" | "paused" | "stopped";
+export type OperationalStatus = "active" | "paused" | "stopped" | "inactive";
 
 export type AgentStrategy = "Opportunity-Seeking" | "Momentum" | "Defensive";
 
