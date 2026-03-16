@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CreatePaymentForm from "./CreatePaymentForm";
 
 type Log = {
@@ -44,6 +44,8 @@ export default function PaymentTaskPanel({ agentId }: { agentId: string }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [logs, setLogs] = useState<Record<string, Log[]>>({});
   const [credits, setCredits] = useState<null | { total: number; used: number; remaining: number }>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const didAutoDemo = useRef(false);
 
   const load = async () => {
     const res = await fetch(`/api/payments/list?agentId=${agentId}`);
@@ -58,6 +60,33 @@ export default function PaymentTaskPanel({ agentId }: { agentId: string }) {
       setCredits(data.credits ?? null);
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const generateDemo = async () => {
+    setIsGenerating(true);
+    try {
+      const res = await fetch("/api/payments/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Failed to generate demo");
+      setExpandedId(null);
+      setLogs({});
+      await load();
+      await loadCredits();
+      setShowSuccess({
+        title: "Demo generated",
+        message: "Seeded payment tasks (scheduled, pending, completed).",
+      });
+      setTimeout(() => setShowSuccess(null), 2200);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to generate demo.");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -91,6 +120,15 @@ export default function PaymentTaskPanel({ agentId }: { agentId: string }) {
       clearTimeout(t0);
       clearInterval(t);
     };
+  }, [agentId]);
+
+  useEffect(() => {
+    if (didAutoDemo.current) return;
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("demo") !== "1") return;
+    didAutoDemo.current = true;
+    void generateDemo();
   }, [agentId]);
 
   useEffect(() => {
@@ -186,6 +224,13 @@ export default function PaymentTaskPanel({ agentId }: { agentId: string }) {
               Credits: {credits.remaining}/{credits.total}
             </div>
           )}
+          <button
+            onClick={generateDemo}
+            disabled={isGenerating}
+            className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-bold text-amber-300 transition hover:bg-amber-500/20 disabled:opacity-50"
+          >
+            {isGenerating ? "Generating..." : "Generate Demo"}
+          </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-bold text-white hover:bg-cyan-400 transition"

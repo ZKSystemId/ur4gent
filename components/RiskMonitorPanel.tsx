@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type RiskLevel = "SAFE" | "SUSPICIOUS" | "DANGEROUS";
 
@@ -54,6 +54,7 @@ export default function RiskMonitorPanel({
   const [contractReason, setContractReason] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const didAutoDemo = useRef(false);
 
   const fetchRisk = useCallback(async () => {
     if (operationalStatus !== "active") {
@@ -93,6 +94,26 @@ export default function RiskMonitorPanel({
       clearInterval(t);
     };
   }, [agentId, fetchRisk, operationalStatus]);
+
+  useEffect(() => {
+    if (didAutoDemo.current) return;
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("demo") !== "1") return;
+    didAutoDemo.current = true;
+    if (operationalStatus !== "active") return;
+    void (async () => {
+      setIsGenerating(true);
+      await fetch("/api/risk/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId }),
+      });
+      await fetchLists();
+      await fetchRisk();
+      setIsGenerating(false);
+    })();
+  }, [agentId, fetchLists, fetchRisk, operationalStatus]);
 
   useEffect(() => {
     const t0 = setTimeout(fetchLists, 0);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type TokenLaunch = {
   id: string;
@@ -41,6 +41,8 @@ export default function TokenCreatorPanel({ agentId }: { agentId: string }) {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const didAutoDemo = useRef(false);
 
   const load = async () => {
     const res = await fetch(`/api/agents/${agentId}/token-launches`);
@@ -67,12 +69,42 @@ export default function TokenCreatorPanel({ agentId }: { agentId: string }) {
   }, [agentId]);
 
   useEffect(() => {
+    if (didAutoDemo.current) return;
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("demo") !== "1") return;
+    didAutoDemo.current = true;
+    void generateDemo();
+  }, [agentId]);
+
+  useEffect(() => {
     if (expandedId) {
         loadLogs(expandedId);
         const t = setInterval(() => loadLogs(expandedId), 3000);
         return () => clearInterval(t);
     }
   }, [expandedId]);
+
+  const generateDemo = async () => {
+    setIsGenerating(true);
+    try {
+      const res = await fetch("/api/tokens/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Failed to generate demo");
+      setExpandedId(null);
+      setLogs({});
+      await load();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to generate demo.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +134,17 @@ export default function TokenCreatorPanel({ agentId }: { agentId: string }) {
     <div className="space-y-6">
       {/* Create Token Form */}
       <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-6">
-        <h2 className="mb-4 text-xl font-bold text-white">Mint New Token</h2>
+        <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="text-xl font-bold text-white">Mint New Token</h2>
+          <button
+            type="button"
+            onClick={generateDemo}
+            disabled={isGenerating}
+            className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-300 hover:bg-amber-500/20 disabled:opacity-50"
+          >
+            {isGenerating ? "Generating..." : "Generate Demo"}
+          </button>
+        </div>
         <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm text-slate-400">Token Name</label>

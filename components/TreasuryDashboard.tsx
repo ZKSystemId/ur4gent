@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { TreasuryCfoSnapshot, TreasuryStatus } from "@/services/treasuryEngine";
 
 interface TreasuryDashboardProps {
@@ -13,7 +13,9 @@ export default function TreasuryDashboard({ initialData, agentId }: TreasuryDash
   const [rebalancing, setRebalancing] = useState(false);
   const [cfo, setCfo] = useState<TreasuryCfoSnapshot | null>(null);
   const [proposing, setProposing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const didAutoDemo = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -22,6 +24,15 @@ export default function TreasuryDashboard({ initialData, agentId }: TreasuryDash
   useEffect(() => {
     setData(initialData);
   }, [initialData]);
+
+  useEffect(() => {
+    if (didAutoDemo.current) return;
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("demo") !== "1") return;
+    didAutoDemo.current = true;
+    void generateDemo();
+  }, [agentId]);
 
   const fetchCfo = useCallback(async () => {
     try {
@@ -33,6 +44,26 @@ export default function TreasuryDashboard({ initialData, agentId }: TreasuryDash
       console.error(error);
     }
   }, []);
+
+  const generateDemo = async () => {
+    setIsGenerating(true);
+    try {
+      const res = await fetch("/api/treasury/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Failed to generate demo");
+      if (json?.treasury) setData(json.treasury as TreasuryStatus);
+      if (json?.cfo) setCfo(json.cfo as TreasuryCfoSnapshot);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to generate demo.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   useEffect(() => {
     const t0 = setTimeout(() => {
@@ -106,8 +137,17 @@ export default function TreasuryDashboard({ initialData, agentId }: TreasuryDash
               Live monitoring across all operator wallets
             </div>
           </div>
-          <div className="text-xs text-slate-500">
-            {mounted ? new Date().toLocaleString() : "Loading..."}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={generateDemo}
+              disabled={isGenerating}
+              className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-300 hover:bg-amber-500/20 disabled:opacity-50"
+            >
+              {isGenerating ? "Generating..." : "Generate Demo"}
+            </button>
+            <div className="text-xs text-slate-500">
+              {mounted ? new Date().toLocaleString() : "Loading..."}
+            </div>
           </div>
         </div>
 

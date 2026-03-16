@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MarketInsights } from "@/services/marketEngine";
 
 export default function MarketMonitorPanel({
@@ -17,6 +17,7 @@ export default function MarketMonitorPanel({
   const [isGenerating, setIsGenerating] = useState(false);
   const [lastScan, setLastScan] = useState<string>("—");
   const [mounted, setMounted] = useState(false);
+  const didAutoDemo = useRef(false);
 
   const fetchMarket = useCallback(async () => {
     if (operationalStatus !== "active") {
@@ -47,6 +48,30 @@ export default function MarketMonitorPanel({
       clearInterval(t);
     };
   }, [fetchMarket, operationalStatus]);
+
+  useEffect(() => {
+    if (didAutoDemo.current) return;
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("demo") !== "1") return;
+    didAutoDemo.current = true;
+    if (operationalStatus !== "active") return;
+    void (async () => {
+      setIsGenerating(true);
+      await fetch("/api/market/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId }),
+      });
+      await fetch("/api/ops/cycle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId }),
+      });
+      await fetchMarket();
+      setIsGenerating(false);
+    })();
+  }, [agentId, fetchMarket, operationalStatus]);
 
   const trends = useMemo(() => data.trends.slice(0, 4), [data.trends]);
   const reports = useMemo(() => data.tokenReports.slice(0, 4), [data.tokenReports]);

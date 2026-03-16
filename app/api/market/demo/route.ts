@@ -17,6 +17,16 @@ export async function POST(request: NextRequest) {
 
   const now = Date.now();
 
+  await prisma.agentLog.deleteMany({
+    where: {
+      agentId: body.agentId,
+      title: { in: ["Market Analyst", "Whale Alert", "Market Sentiment", "Market Insight"] },
+    },
+  });
+  await prisma.transaction.deleteMany({
+    where: { fromAgentId: body.agentId, txId: { startsWith: "whale-" } },
+  });
+
   await prisma.transaction.create({
     data: {
       fromAgentId: body.agentId,
