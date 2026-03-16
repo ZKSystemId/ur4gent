@@ -12,7 +12,7 @@
     "@hashgraph/hedera-wallet-connect": "^2.0.6",
     "@hashgraph/sdk": "^2.80.0",
     "@hiero-ledger/proto": "^2.26.0-beta.3",
-    "@hiero-ledger/sdk": "^2.80.0",
+    "@hiero-ledger/sdk": "2.79.0",
     "@prisma/client": "^6.5.0",
     "@walletconnect/modal": "^2.7.0",
     "@walletconnect/types": "^2.23.7",
