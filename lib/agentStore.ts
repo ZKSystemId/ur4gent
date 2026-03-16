@@ -36,9 +36,10 @@ const mapAgent = (agent: {
   expiresAt: agent.expiresAt ?? null,
 });
 
-export const getAgents = async () => {
+export const getAgents = async (ownerId?: string | null) => {
   try {
     const agents = await prisma.agent.findMany({
+      where: ownerId ? { ownerId } : undefined,
       orderBy: { createdAt: "desc" },
     });
     return agents.map(mapAgent);

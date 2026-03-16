@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useWallet } from "@/lib/hashconnect";
 
 const PLAN_OPTIONS = [
   { value: "starter", label: "Starter (1 day)", credits: 5, factor: 0.2 },
@@ -21,16 +22,21 @@ export default function RentButton({
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState("enterprise");
   const router = useRouter();
+  const { accountId } = useWallet();
   const planMeta = PLAN_OPTIONS.find((p) => p.value === plan) ?? PLAN_OPTIONS[2];
   const planPrice = Number((price * planMeta.factor).toFixed(2));
 
   const handleRent = async () => {
+    if (!accountId) {
+      alert("Connect wallet first to rent agents for this account.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/agents/rent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ templateId, plan }),
+        body: JSON.stringify({ templateId, plan, ownerId: accountId }),
       });
 
       if (res.ok) {

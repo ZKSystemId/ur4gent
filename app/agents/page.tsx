@@ -1,11 +1,13 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import Link from "next/link";
 import { getAgents } from "@/lib/agentStore";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 export default async function AgentsPage() {
-  const agents = await getAgents();
+  const ownerId = (await cookies()).get("ur4gent_ownerId")?.value ?? null;
+  const agents = await getAgents(ownerId);
 
   return (
     <DashboardLayout>

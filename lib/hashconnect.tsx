@@ -78,6 +78,15 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     init();
   }, []);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (accountId) {
+      document.cookie = `ur4gent_ownerId=${encodeURIComponent(accountId)}; Path=/; SameSite=Lax`;
+    } else {
+      document.cookie = "ur4gent_ownerId=; Path=/; Max-Age=0; SameSite=Lax";
+    }
+  }, [accountId]);
+
   const connect = useCallback(async () => {
     if (!dAppConnector) return;
     try {

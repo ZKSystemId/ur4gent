@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { rentAgent } from "@/services/agentRentalService";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +19,16 @@ export async function POST(request: Request) {
       );
     }
 
+    const ownerId = payload.ownerId ?? (await cookies()).get("ur4gent_ownerId")?.value ?? null;
+    if (!ownerId) {
+      return NextResponse.json(
+        { error: "Missing ownerId (connect wallet first)" },
+        { status: 400 },
+      );
+    }
+
     console.log("Renting agent with template:", payload.templateId);
-    const agent = await rentAgent(payload.templateId, payload.ownerId, payload.plan ?? "enterprise");
+    const agent = await rentAgent(payload.templateId, ownerId, payload.plan ?? "enterprise");
     console.log("Agent rented successfully:", agent.id);
     return NextResponse.json({ agent });
   } catch (error) {

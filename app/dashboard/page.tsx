@@ -9,26 +9,32 @@ import { getTreasuryStatus } from "@/services/treasuryEngine";
 import { getPayments } from "@/services/paymentService";
 import { getBlockchainEvents } from "@/services/blockchainMonitor";
 import { getOperationsHealth } from "@/services/operationsOrchestrator";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const agents = await getAgents();
+  const ownerId = (await cookies()).get("ur4gent_ownerId")?.value ?? null;
+  const agents = await getAgents(ownerId);
   const allActivities = await getActivities();
-  const activities = allActivities.slice(0, 3);
-  const operationsExecuted = allActivities.filter(
+  const ownedAgentIds = new Set(agents.map((a) => a.id));
+  const ownedActivities = allActivities.filter(
+    (a) => !a.agentId || ownedAgentIds.has(a.agentId),
+  );
+  const activities = ownedActivities.slice(0, 3);
+  const operationsExecuted = ownedActivities.filter(
     (activity) => activity.type === "ai_operation",
   ).length;
-  const thinkingActivity = allActivities.find(
+  const thinkingActivity = ownedActivities.find(
     (activity) =>
       activity.type === "ai_operation" ||
       activity.type === "automation_triggered",
   );
   const treasuryStatus = await getTreasuryStatus();
-  const payments = await getPayments();
-  const blockchainEvents = await getBlockchainEvents(3);
+  const payments = (await getPayments()).filter((p) => !p.agentId || ownedAgentIds.has(p.agentId));
+  const blockchainEvents = (await getBlockchainEvents(25)).filter((e) => !e.agentId || ownedAgentIds.has(e.agentId)).slice(0, 3);
   const operationsHealth = getOperationsHealth();
-  const decisionActivities = allActivities
+  const decisionActivities = ownedActivities
     .filter(
       (activity) =>
         activity.type === "ai_operation" ||
