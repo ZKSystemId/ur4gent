@@ -1,0 +1,199 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model AgentTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  role        String
+  description String
+  price       Float
+  capabilities String  @default("[]") // JSON array of strings
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  agents      Agent[]
+}
+
+model Agent {
+  id              String        @id @default(cuid())
+  templateId      String?
+  name            String
+  role            String
+  agentType       String        @default("generic")
+  permissions     String        @default("[]")
+  operationalStatus String      @default("active") // active, paused, stopped
+  strategy        String        @default("standard")
+  riskLevel       String        @default("medium")
+  decisionStyle   String        @default("balanced")
+  hederaAccountId String?
+  hederaPublicKey String?
+  status          String        @default("active") // active, inactive
+  reputation      Int           @default(100)
+  balance         Float         @default(0.0)
+  lastExecution   DateTime?
+  aiDecisionLog   String?
+  ownerId         String?       // ID of the user who rented this agent
+  rentedAt        DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime      @default(now())
+  
+  template        AgentTemplate? @relation(fields: [templateId], references: [id])
+  walletSecret    WalletSecret?
+  activities      Activity[]
+  transactionsOut Transaction[] @relation("TransactionFrom")
+  transactionsIn  Transaction[] @relation("TransactionTo")
+  payments        Payment[]
+  tokenLaunches   TokenLaunch[]
+  blockchainEvents BlockchainEvent[]
+  performance     AgentPerformance?
+  logs            AgentLog[]
+  memories        AgentMemory[]
+  config          AgentConfig?
+}
+
+model AgentConfig {
+  id        String   @id @default(cuid())
+  agentId   String   @unique
+  interval  Int      @default(30) // seconds
+  targetTokens String @default("[]") // JSON array
+  minBalance Float   @default(10.0)
+  maxTradeAmount Float @default(100.0)
+  updatedAt DateTime @updatedAt
+  agent     Agent    @relation(fields: [agentId], references: [id])
+}
+
+model AgentLog {
+  id        String   @id @default(cuid())
+  agentId   String
+  paymentId String?
+  level     String   // info, warn, error, success
+  title     String
+  message   String
+  data      String?  // JSON string for structured data
+  createdAt DateTime @default(now())
+  agent     Agent    @relation(fields: [agentId], references: [id])
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+  tokenLaunchId String?
+  tokenLaunch   TokenLaunch? @relation(fields: [tokenLaunchId], references: [id])
+}
+
+model TokenLaunch {
+  id              String   @id @default(cuid())
+  agentId         String
+  name            String
+  symbol          String
+  decimals        Int
+  initialSupply   Float
+  treasuryAccount String?
+  status          String   @default("PENDING") // PENDING, EXECUTING, COMPLETED, FAILED
+  tokenId         String?
+  txId            String?
+  error           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  agent           Agent    @relation(fields: [agentId], references: [id])
+  logs            AgentLog[]
+}
+
+model AgentMemory {
+  id        String   @id @default(cuid())
+  agentId   String
+  key       String
+  value     String
+  type      String   // short_term, long_term
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  agent     Agent    @relation(fields: [agentId], references: [id])
+
+  @@unique([agentId, key])
+}
+
+model AgentPerformance {
+  id             String   @id @default(cuid())
+  agentId        String   @unique
+  totalOperations Int     @default(0)
+  successRate    Float    @default(100.0)
+  profitGenerated Float   @default(0.0)
+  efficiencyScore Float   @default(100.0)
+  updatedAt      DateTime @updatedAt
+  agent          Agent    @relation(fields: [agentId], references: [id])
+}
+
+model WalletSecret {
+  id                  String   @id @default(cuid())
+  agentId             String   @unique
+  privateKeyEncrypted String
+  createdAt           DateTime @default(now())
+  agent               Agent    @relation(fields: [agentId], references: [id])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  txId        String?
+  fromAgentId String?
+  toAgentId   String?
+  amount      Float
+  status      String
+  createdAt   DateTime @default(now())
+  
+  // Update relations to be optional or ensure IDs exist
+  fromAgent   Agent?    @relation("TransactionFrom", fields: [fromAgentId], references: [id], onDelete: SetNull)
+  toAgent     Agent?    @relation("TransactionTo", fields: [toAgentId], references: [id], onDelete: SetNull)
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  type      String
+  agentId   String?
+  title     String?
+  detail    String?
+  message   String? // Deprecated, use title/detail
+  createdAt DateTime @default(now())
+  agent     Agent?   @relation(fields: [agentId], references: [id])
+}
+
+model Payment {
+  id              String    @id @default(cuid())
+  agentId         String?
+  recipientAddress String
+  amount          Float
+  token           String    @default("HBAR")
+  category        String    // Payroll, Bounty, Grant, Treasury, Subscription
+  executionType   String    // Instant, Scheduled, Recurring
+  scheduleAt      DateTime?
+  recurringInterval String? // Daily, Weekly, Monthly
+  retryCount      Int       @default(0)
+  status          String    @default("pending") // pending, scheduled, executing, completed, failed, cancelled
+  txId            String?
+  riskScore       Float     @default(0)
+  description     String?
+  createdAt       DateTime  @default(now())
+  executedAt      DateTime?
+  
+  // JSON array for batch payments: [{address: "0.0.1", amount: 10}, ...]
+  // If present, recipientAddress and amount are ignored or serve as totals/summary
+  batchDetails    String?   
+
+  agent           Agent?    @relation(fields: [agentId], references: [id])
+  logs            AgentLog[]
+}
+
+model BlockchainEvent {
+  id        String   @id @default(cuid())
+  agentId   String?
+  eventType String
+  detail    String
+  txId      String?
+  createdAt DateTime @default(now())
+  agent     Agent?   @relation(fields: [agentId], references: [id])
+}
