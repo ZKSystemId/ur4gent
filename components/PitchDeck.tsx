@@ -27,8 +27,8 @@ const Slide = ({
           <div className="mt-2 text-sm text-slate-300">{subtitle}</div>
         )}
       </div>
-      <div className="mt-10 flex-1">{children}</div>
-      <div className="mt-10 flex items-center justify-between text-xs text-slate-500">
+      <div className="mt-8 flex-1 print:mt-5">{children}</div>
+      <div className="mt-6 flex items-center justify-between text-xs text-slate-500 print:mt-4">
         <div>Ur4gent • AI Agent Rental Marketplace</div>
         <div className="print:hidden">Press Print to save as PDF</div>
       </div>
@@ -104,33 +104,46 @@ export default function PitchDeck({ repoUrl, liveUrl, demoUrl }: PitchDeckProps)
               </div>
               <div className="mt-5 text-sm font-semibold text-slate-200">What we built</div>
               <ul className="mt-3 space-y-2 text-sm text-slate-300">
-                <li>Marketplace to rent specialized AI agents per wallet</li>
-                <li>Command Center + Agent Console for actions, logs, and outcomes</li>
-                <li>OpenClaw bounties with verifiable proof links (Hashscan)</li>
+                <li>Agent marketplace (rent templates per wallet)</li>
+                <li>Unified Command Center + Agent Console (actions + logs)</li>
+                <li>On-chain verifiability (tx/proof links on Hashscan)</li>
               </ul>
               <div className="mt-5 text-sm font-semibold text-slate-200">Tech stack</div>
-              <div className="mt-3 text-sm text-slate-300">
-                Next.js + React + TypeScript, Prisma + PostgreSQL (Supabase), HashPack (WalletConnect),
-                Hedera SDK, Vercel.
-              </div>
+              <ul className="mt-3 space-y-2 text-sm text-slate-300">
+                <li>Next.js + React + TypeScript</li>
+                <li>Prisma + PostgreSQL (Supabase)</li>
+                <li>HashPack (WalletConnect) + Hedera SDK</li>
+                <li>Vercel</li>
+              </ul>
             </div>
             <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-6">
               <div className="text-sm font-semibold text-slate-200">Judging criteria mapping</div>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {[
-                  { t: "Innovation", d: "AI operator marketplace + unified ops console" },
-                  { t: "Technical", d: "Hedera SDK, Prisma/Postgres, modular services" },
-                  { t: "Usability", d: "Rent → Console → Run → See logs/proofs" },
-                  { t: "Impact", d: "Cuts ops overhead for DAOs & communities" },
-                  { t: "Trust", d: "Audit logs + verifiable tx/proof links" },
-                  { t: "Scalability", d: "Add templates/capabilities without new UX" },
-                ].map((x) => (
-                  <div key={x.t} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-sm font-semibold text-white">{x.t}</div>
-                    <div className="mt-1 text-xs leading-relaxed text-slate-300">{x.d}</div>
-                  </div>
-                ))}
-              </div>
+              <ul className="mt-4 space-y-2 text-sm text-slate-300">
+                <li>
+                  <span className="font-semibold text-white">Innovation:</span> AI operator marketplace
+                  + unified ops console
+                </li>
+                <li>
+                  <span className="font-semibold text-white">Technical depth:</span> Hedera SDK,
+                  modular services, Prisma/Postgres
+                </li>
+                <li>
+                  <span className="font-semibold text-white">Usability:</span> Rent → Console → Run →
+                  outputs + logs
+                </li>
+                <li>
+                  <span className="font-semibold text-white">Impact:</span> Less overhead for DAOs,
+                  communities, Web3 teams
+                </li>
+                <li>
+                  <span className="font-semibold text-white">Trust:</span> Auditable logs + verifiable
+                  tx/proof links
+                </li>
+                <li>
+                  <span className="font-semibold text-white">Scalability:</span> Add templates and
+                  capabilities without changing core UX
+                </li>
+              </ul>
             </div>
           </div>
         </Slide>
@@ -204,9 +217,9 @@ export default function PitchDeck({ repoUrl, liveUrl, demoUrl }: PitchDeckProps)
             display: none !important;
           }
           .slide {
-            width: 297mm;
-            height: 210mm;
-            padding: 12mm !important;
+            width: 287mm;
+            height: 200mm;
+            padding: 9mm !important;
             box-sizing: border-box;
             overflow: hidden;
             break-after: page;
@@ -218,7 +231,8 @@ export default function PitchDeck({ repoUrl, liveUrl, demoUrl }: PitchDeckProps)
           .slide p,
           .slide li,
           .slide div {
-            font-size: 11px;
+            font-size: 10px;
+            line-height: 1.25;
           }
         }
       `}</style>
